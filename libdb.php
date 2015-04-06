@@ -12,7 +12,7 @@ function db_query($query)
 {
   $query = trim($query);
   $query  ="_".$query;
-  echo "Running query $query\n";
+  //echo "Running query $query\n";
   $result = pg_query($query);
   if(!$result)
   {

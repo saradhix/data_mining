@@ -19,8 +19,8 @@ function split_table($tablename, $id,  $percentage)
   //now start swapping
   for($i=0;$i<$num_rows/2;$i++)
   {
-    $first=mt_rand(1,$num_rows);
-    $second=mt_rand(1,$num_rows);
+    $first=mt_rand(0,$num_rows-1);
+    $second=mt_rand(0,$num_rows-1);
     $temp=$ids[$first];
     $ids[$first]=$ids[$second];
     $ids[$second]=$temp;
@@ -44,18 +44,29 @@ function split_table($tablename, $id,  $percentage)
 
 function update_ids($tablename, $id)
 {
-  db_query("begin");
-  $sql="select $id from $tablename";
+  $temp="temp";
+  $sql="create table $temp as select * from $tablename";
+  db_query($sql);
+  $sql="delete from $temp";
+  db_query($sql);
+  //db_query("begin");
+  $sql="select * from $tablename";
   $result=db_query($sql);
   $count=0;
   while($row=db_fetch_row($result))
   {
     $count++;
     $id_val=$row[0];
-    $sql="update $tablename set $id=$count where $id=$id_val ";
+    $row[0]=$count;
+    $insert_sql=implode(",",$row);
+    $sql="insert into $temp values($insert_sql)";
     db_query($sql);
   }
-  db_query("commit");
+  //db_query("commit");
+  $sql="drop table $tablename";
+  db_query($sql);
+  $sql="alter table $temp rename to $tablename";
+  db_query($sql);
 }
 
 
@@ -64,6 +75,20 @@ function update_mappings($tablename, $column, $mapping)
   foreach($mapping as $key=>$value)
   {
     $sql="update $tablename set $column=$value where $column=$key";
+    db_query($sql);
+  }
+}
+
+function join_table($table1, $table2, $common_key, $table1_colname, $table2_colname)
+{
+
+  $sql="select $common_key, $table2_colname from $table2";
+  $result=db_query($sql);
+  while($row=db_fetch_array($result))
+  {
+    $id=$row[$common_key];
+    $val=$row[$table2_colname];
+    $sql="update $table1 set $table1_colname=$val where $common_key=$id";
     db_query($sql);
   }
 }
