@@ -10,12 +10,12 @@ $port="5432";
 $dbcnx = db_connect ($hostname, $port, $dbname, $username, $password);
 //drop the existing table
 
-$tablename="wisconsin_data";
+$tablename="wdbc_data";
 $sql="drop table if exists $tablename";
 db_query($sql);
 $idcol="id";
 $target_class="is_malignant";
-$howmany_features=9;
+$howmany_features=30;
 $type="numeric";
 $mapping=["2"=>"0","4"=>"1"];
 $lr_result="lr_result";
@@ -23,8 +23,8 @@ $nb_result="nb_result";
 $knn1_result="knn1_result";
 $knn5_result="knn5_result";
 
-$data_file_name="breast-cancer-wisconsin.data";
-$create_sql="create table $tablename ( $idcol int,  ";
+$data_file_name="wdbc.data";
+$create_sql="create table $tablename ( $idcol int, $target_class int, ";
 $fragments=[];
 for($i=1;$i<=$howmany_features;$i++)
 {
@@ -35,7 +35,7 @@ for($i=1;$i<=$howmany_features;$i++)
 
 $col_sql=implode(", ",$fragments);
 
-$sql = "$create_sql $col_sql, $target_class int ) distribute by replication";
+$sql = "$create_sql $col_sql ) distribute by replication";
 echo "Sql=$sql\n";
 db_query($sql);
 echo "Table $tablename created\n";
@@ -46,6 +46,8 @@ $fp=fopen($data_file_name,"r");
 while(($s=fgets($fp))!==false)
 {
   $s=trim($s);
+  $s=str_replace("M","1",$s);
+  $s=str_replace("B","0",$s);
   $sql="insert into $tablename values($s)";
   db_query($sql);
   $cx++;
@@ -77,7 +79,8 @@ select * from logistic_regression(
   {
   "input":"$training_table",
   "target_class":"$target_class",
-  "columns":["x1","x2","x3","x4","x5","x6","x7","x8","x9"],
+  "columns":["x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11","x12","x13","x14","x15",
+  "x16","x17","x18","x19","x20","x21","x22","x23","x24","x25","x26","x27","x28","x29","x30"],
   "output_model":"output_model_breast_cancer",
   "max_iter":100
   })
@@ -119,7 +122,7 @@ $result=db_query($sql);
 $row=db_fetch_row($result);
 $right_count=$row[0];
 echo "LR:correct=$right_count total=$test_count\n";
-
+/*
 //Try naive bayes
 $sql=<<<EOL
 select * from naive_bayes({"input":"$training_table",
@@ -260,7 +263,7 @@ select * from knn(
 "id":"id",
 "output_table":"nn_output",
 "target_class":"is_malignant",
-"features":["x1","x2","x3","x4","x5","x6","x7","x8","x9","lr_predict"]
+"features":["x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11","x12","x13","x14","x15", "x16","x17","x18","x19","x20","x21","x22","x23","x24","x25","x26","x27","x28","x29","x30","lr_predict"]
 })
 EOL;
 $result=db_query_tesla($sql);
