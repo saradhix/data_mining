@@ -122,12 +122,12 @@ $result=db_query($sql);
 $row=db_fetch_row($result);
 $right_count=$row[0];
 echo "LR:correct=$right_count total=$test_count\n";
-/*
+
 //Try naive bayes
 $sql=<<<EOL
 select * from naive_bayes({"input":"$training_table",
 "target_class":"$target_class",
-"numeric_columns":["x1","x2","x3","x4","x5","x6","x7","x8","x9"],
+"numeric_columns":["x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11","x12","x13","x14","x15", "x16","x17","x18","x19","x20","x21","x22","x23","x24","x25","x26","x27","x28","x29","x30","nb_predict"],
 "partition_by":"id","output_model":"bayes_model_wisconsin"});
 EOL;
 db_query_tesla($sql);
@@ -174,7 +174,7 @@ select * from knn(
 "id":"id",
 "output_table":"nn_output",
 "target_class":"is_malignant",
-"features":["x1","x2","x3","x4","x5","x6","x7","x8","x9"]
+"features":["x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11","x12","x13","x14","x15", "x16","x17","x18","x19","x20","x21","x22","x23","x24","x25","x26","x27","x28","x29","x30","nb_predict"]
 })
 EOL;
 $result=db_query_tesla($sql);
@@ -221,7 +221,7 @@ $result=db_query($sql);
 $row=db_fetch_row($result);
 $right_count=$row[0];
 echo "KNN1:correct=$right_count total=$test_count\n";
-*/
+
 //Now do the ensemble classification
 //1. Run the lr predict on train data. Add the column to the training table
 //2. Now use lr_predict on test and train to do knn classification
@@ -252,6 +252,26 @@ while($row=db_fetch_array($result))
 $sql="alter table $test_table add column ensemble_predict int";
 db_query($sql);
 echo "ensemble_predict column added to $test_table\n";
+/*Add nb_predict for the training table*/
+$sql="alter table $training_table add column nb_predict int";
+db_query($sql);
+echo "nb_predict column added to $training_table\n";
+$sql=<<<EOL
+select * from naive_bayes_predict(
+{
+"input":"$training_table",
+"model":"bayes_model_wisconsin",
+"id":"id"
+})
+EOL;
+$result=db_query_tesla($sql);
+echo "Done executing nb_predict on training\n";
+while($row=db_fetch_array($result))
+{
+  $idval=$row['id'];
+  $prediction=$row['prediction'];
+  $sql="update $training_table set nb_predict=$prediction where id=$idval";
+}
 //Run knn5 now
 
 $sql=<<<EOL
@@ -259,11 +279,11 @@ select * from knn(
 {
 "training_table":"$training_table",
 "test_table":"$test_table",
-"k":1,
+"k":5,
 "id":"id",
 "output_table":"nn_output",
 "target_class":"is_malignant",
-"features":["x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11","x12","x13","x14","x15", "x16","x17","x18","x19","x20","x21","x22","x23","x24","x25","x26","x27","x28","x29","x30","lr_predict"]
+"features":["x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11","x12","x13","x14","x15", "x16","x17","x18","x19","x20","x21","x22","x23","x24","x25","x26","x27","x28","x29","x30","nb_predict"]
 })
 EOL;
 $result=db_query_tesla($sql);
@@ -278,7 +298,7 @@ $sql="select count(*) from $test_table where ensemble_predict=is_malignant";
 $result=db_query($sql);
 $row=db_fetch_row($result);
 $right_count=$row[0];
-echo "LR-KNN5-ENS:correct=$right_count total=$test_count\n";
+echo "NB-KNN5-ENS:correct=$right_count total=$test_count\n";
 db_close($dbcnx);
 
 ?>
