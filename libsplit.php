@@ -45,6 +45,8 @@ function split_table($tablename, $id,  $percentage)
 function update_ids($tablename, $id)
 {
   $temp="temp";
+  $sql="drop table if exists $temp";
+  db_query($sql);
   $sql="create table $temp as select * from $tablename";
   db_query($sql);
   $sql="delete from $temp";
