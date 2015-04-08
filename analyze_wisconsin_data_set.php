@@ -218,7 +218,7 @@ $result=db_query($sql);
 $row=db_fetch_row($result);
 $right_count=$row[0];
 echo "KNN1:correct=$right_count total=$test_count\n";
-*/
+
 //Now do the ensemble classification
 //1. Run the lr predict on train data. Add the column to the training table
 //2. Now use lr_predict on test and train to do knn classification
